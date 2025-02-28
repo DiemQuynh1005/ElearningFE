@@ -11150,4 +11150,69 @@
   .testimonial-carousel .owl-nav .owl-prev:hover {
     background: #2878EB;
   }
+
+  /* .otp-field {
+    flex-direction: row;
+    column-gap: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .otp-field input {
+    height: 45px;
+    width: 42px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 1.125rem;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+
+  .otp-field input:focus {
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .otp-field input::-webkit-inner-spin-button,
+  .otp-field input::-webkit-outer-spin-button {
+    display: none;
+  } */
+
+  .lesson-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f0f0f0;
+    border: none;
+    text-align: left;
+    width: 100%;
+    margin-bottom: 1em;
+  }
+
+  .lesson-outline {
+    padding-bottom: 0.5em;
+    border-bottom: thin solid #000;
+  }
+
+  .lesson-item.active {
+    background-color: #ffc107;
+    /* Highlight active lesson */
+  }
+
+  .lesson-title {
+    font-weight: bold;
+  }
+
+  .lesson-details {
+    display: flex;
+    align-items: end;
+    color: #777;
+    /* Example detail color */
+  }
+
+  .duration,
+  .views {
+    margin-left: 10px;
+    /* Space between details */
+  }
 }

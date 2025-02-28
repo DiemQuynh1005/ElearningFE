@@ -1,40 +1,24 @@
 import React, { useContext, useEffect, useState } from "react";
-import ReactPaginate from "react-paginate";
-import { Link, useParams } from "react-router-dom";
 import { DataContext } from "../../../contexts/DataContext";
-import { ColorRing } from "react-loader-spinner";
-import { Alert, Button } from "react-bootstrap";
-import AOS from "aos";
 import axios from "axios";
-import CourseLessonInsert from "./CourseLessonInsert";
-import CourseLessonEdit from "./CourseLessonEdit";
+import { Link } from "react-router-dom";
+import { ColorRing } from "react-loader-spinner";
+import ReactPaginate from "react-paginate";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { Alert } from "react-bootstrap";
 
-function CourseLessonsList(props) {
+function BlogList(props) {
 	const [data, setData] = useState([]);
-	const [course, setCourse] = useState({});
 	const { alert } = useContext(DataContext);
-	const { id } = useParams();
-	const [modalShow, setModalShow] = useState(false);
-	const [editModalShow, setEditModalShow] = useState(false);
-	const [lessonToEdit, setLessonToEdit] = useState(null);
 
 	const fetchData = async () => {
 		try {
-			const response = await axios.get(
-				`http://localhost:8080/api/lessons/by-course/${id}`
-			);
+			const response = await axios.get("http://localhost:8080/api/blogs");
 			setData(response.data);
-			data.forEach((lesson) => {
-				setCourse(lesson.course);
-			});
 		} catch (error) {
 			console.log("Error FETCHING DATA: ", error);
 		}
-	};
-
-	const handleEditClick = (lesson) => {
-		setLessonToEdit(lesson);
-		setEditModalShow(true);
 	};
 
 	useEffect(() => {
@@ -46,7 +30,7 @@ function CourseLessonsList(props) {
 	const [currentItems, setCurrentItems] = useState([]);
 	const [pageCount, setPageCount] = useState(0);
 	const [itemOffset, setItemOffset] = useState(0);
-	const itemsPerPage = 3;
+	const itemsPerPage = 5;
 	useEffect(() => {
 		const endOffset = itemOffset + itemsPerPage;
 		setCurrentItems(data.slice(itemOffset, endOffset));
@@ -57,10 +41,9 @@ function CourseLessonsList(props) {
 		setItemOffset(newOffset);
 	};
 	//END PAGINATE
-
 	return (
 		<div className="container mt-3">
-			<h2>{Object.keys(course).length === 0 ? "" : `${course.name} - `}Lesson Table</h2>
+			<h2>Courses Table</h2>
 
 			{alert.type != "" && (
 				<Alert variant={alert.type} dismissible transition>
@@ -68,19 +51,9 @@ function CourseLessonsList(props) {
 				</Alert>
 			)}
 
-			<Button variant="primary" className="mb-3" onClick={() => setModalShow(true)}>
-				Insert New Lesson
-			</Button>
-			{/* Start Lesson Form Modal */}
-			<CourseLessonInsert
-				show={modalShow}
-				onHide={() => {
-					setModalShow(false);
-					fetchData();
-				}}
-				course_id={id}
-			/>
-			{/* End Lesson Form Modal */}
+			<Link className="btn btn-primary mb-3" to={"./new"}>
+				<b>Insert New Blog</b>
+			</Link>
 
 			{/* LOADER SPINNER */}
 			{data.length == 0 && (
@@ -99,12 +72,10 @@ function CourseLessonsList(props) {
 				<thead>
 					<tr>
 						<th>#</th>
-						<th>Name</th>
-						<th>Video</th>
-						<th>View</th>
+						<th>Title</th>
+						<th>Image</th>
 						<th>Status</th>
-						<th>Homework</th>
-						<th></th>
+						<th>Action</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -116,17 +87,19 @@ function CourseLessonsList(props) {
 								return (
 									<tr key={index}>
 										<td>{index + 1}</td>
-										<td>{item.name}</td>
+										<td>{item.title}</td>
 										<td>
-											<video
+											<img
+												key={index}
+												src={`http://localhost:8080/uploads/blogs/${item.image}`}
+												alt="img"
 												className="img-thumbnail"
-												width="213"
-												height="160"
-												controls
-												src={item.video}
+												style={{
+													width: "7em",
+													height: "10em",
+												}}
 											/>
 										</td>
-										<td>{item.view}</td>
 										<td>
 											<span
 												className={`badge ${
@@ -139,32 +112,20 @@ function CourseLessonsList(props) {
 											</span>
 										</td>
 										<td>
-											{item.hasHomework ? (
-												<Link
-													className="btn btn-warning"
-													to={`/admin/lesson/${item.id}/homeworks/edit`}
-												>
-													<b>Edit Homework</b>
-												</Link>
-											) : (
-												<Link
-													className="btn btn-outline-info"
-													to={`/admin/lesson/${item.id}/homeworks/new`}
-												>
-													<b>Create Homework</b>
-												</Link>
-											)}
-										</td>
-										<td>
-											<Button
+											<Link
 												className="btn btn-success me-2"
-												onClick={() =>
-													handleEditClick(item)
-												}
+												to={`./edit/${item.id}`}
 												title="Edit"
 											>
 												<i className="fa-solid fa-pen-to-square"></i>
-											</Button>
+											</Link>
+
+											{/* <Link
+												className="btn btn-danger"
+												to={`./${item.id}/lessons`}
+											>
+												<b>To Lessions</b>
+											</Link> */}
 										</td>
 									</tr>
 								);
@@ -191,20 +152,8 @@ function CourseLessonsList(props) {
 				activeClassName="active"
 				renderOnZeroPageCount={null}
 			/>
-
-			{/* Start Edit Lesson Form Modal */}
-			<CourseLessonEdit
-				show={editModalShow}
-				onHide={() => {
-					setEditModalShow(false);
-					setLessonToEdit(null);
-					fetchData();
-				}}
-				lesson={lessonToEdit}
-			/>
-			{/* End Edit Lesson Form Modal */}
 		</div>
 	);
 }
 
-export default CourseLessonsList;
+export default BlogList;

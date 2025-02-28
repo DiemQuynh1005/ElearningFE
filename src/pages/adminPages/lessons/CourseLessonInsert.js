@@ -15,12 +15,18 @@ const schema = yup
 			.max(100, "Less than 100 characters")
 			.required(),
 		// status: yup.boolean().required(),
-		video: yup.mixed().test("video", "You need to provide a file", (value) => {
-			if (value.length > 0) {
-				return true;
-			}
-			return false;
-		}),
+		video: yup
+			.mixed()
+			.test("video", "You need to provide a file", (value) => {
+				if (value.length > 0) {
+					return true;
+				}
+				return false;
+			})
+			.test("fileType", "Unsupported File Format", (value) => {
+				const file = value[0];
+				return file?.type.startsWith("video/"); // Check if it's an image
+			}),
 	})
 	.required();
 
@@ -78,11 +84,6 @@ function CourseLessonInsert(props) {
 			</Modal.Header>
 			<Modal.Body>
 				<div className="container mt-3" data-aos="fade">
-					{/* {alert.type !== "" && (
-						<Alert variant={alert.type} dismissible>
-							{alert.message}
-						</Alert>
-					)} */}
 					<form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
 						<div className="row mb-3 mt-3">
 							<div className="col-6">

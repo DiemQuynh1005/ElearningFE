@@ -1,8 +1,11 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
+	Alert,
+	Badge,
 	Button,
 	Col,
 	Container,
+	Dropdown,
 	Form,
 	InputGroup,
 	Nav,
@@ -10,6 +13,7 @@ import {
 	NavDropdown,
 	Offcanvas,
 	Row,
+	Table,
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { DataContext } from "../contexts/DataContext";
@@ -18,7 +22,8 @@ import("../css/home.css");
 
 function HomepageLayout({ children }) {
 	const [showButton, setShowButton] = useState(false);
-	const { auth, logout } = useContext(DataContext);
+	const { auth, logout, cartItems, setCartItems, alert } = useContext(DataContext);
+	const cartIconRef = useRef(null);
 
 	const switchLink = useCallback(() => {
 		switch (auth?.role) {
@@ -33,52 +38,138 @@ function HomepageLayout({ children }) {
 				);
 			case "USER":
 				return (
-					<NavDropdown
-						id="navbarDropdown"
-						title={
-							<i
-								className="fa-solid fa-circle-user"
-								style={{ marginTop: "0.3em" }}
-							></i>
-						}
-						// menuVariant="dark"
-						className="nav-item dropdown"
-					>
-						<NavDropdown.Item style={{ padding: "0" }}>
-							<Link className="dropdown-item" to={`/${auth?.userName}`}>
-								<i className="fas fa-user me-2"></i>
-								PROFILE
-							</Link>
-						</NavDropdown.Item>
-						<NavDropdown.Divider />
-						<NavDropdown.Item style={{ padding: "0" }}>
-							<Link
-								className="dropdown-item"
-								to={`/${auth?.userName}/transaction`}
-							>
-								<i className="fa-solid fa-clock-rotate-left me-2"></i>
-								TRANSACTION
-							</Link>
-						</NavDropdown.Item>
-						<NavDropdown.Divider />
-						<NavDropdown.Item style={{ padding: "0" }}>
-							<span
-								className="ms-3"
-								onClick={() => {
-									if (
-										window.confirm(
-											"Are you sure you want to log out?"
-										)
-									) {
-										logout();
-									}
-								}}
-							>
-								<i className="fas fa-sign-out me-2"></i>
-								LOG OUT
-							</span>
-						</NavDropdown.Item>
-					</NavDropdown>
+					<Nav>
+						<NavDropdown
+							id="navbarDropdown"
+							title={
+								<i className="fas fa-shopping-cart">
+									<Badge bg="danger ms-1">
+										{cartItems.length}
+									</Badge>
+								</i>
+							}
+							ref={cartIconRef}
+							className="nav-item dropdown dropdown-menu-right"
+							// style={{ minWidth: "300px" }}
+							// align="end"
+						>
+							{cartItems.length === 0 ? (
+								<Dropdown.ItemText style={{ width: "max-content" }}>
+									Your cart is empty.
+								</Dropdown.ItemText>
+							) : (
+								<NavDropdown.Item style={{ padding: "0" }}>
+									<Table hover>
+										<thead>
+											<tr>
+												<th>Course</th>
+												<th>Price</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											{cartItems.map((item) => (
+												<tr key={item.id}>
+													<td>{item.name}</td>
+													<td>{item.price}</td>
+													<td>
+														<i
+															className="fas fa-minus-circle text-danger" // Minus icon
+															style={{
+																cursor: "pointer",
+															}}
+															title="Remove course from Cart"
+															onClick={() => {
+																if (
+																	window.confirm(
+																		"Do you want to remove the course from cart?"
+																	)
+																) {
+																	setCartItems(
+																		(
+																			prevItems
+																		) =>
+																			prevItems.filter(
+																				(
+																					cartItem
+																				) =>
+																					cartItem.id !==
+																					item.id
+																			)
+																	);
+																}
+															}}
+														/>
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</Table>
+									<NavDropdown.Divider
+									// style={{ width: "20em" }}
+									/>
+									{/* <NavDropdown.Item style={{ padding: "0" }}> */}
+									<Link
+										className="btn btn-success dropdown-item"
+										to={"/payment"}
+									>
+										Go to Payment
+									</Link>
+									{/* </NavDropdown.Item> */}
+								</NavDropdown.Item>
+							)}
+						</NavDropdown>
+
+						<NavDropdown
+							id="navbarDropdown"
+							title={
+								<i
+									className="fa-solid fa-circle-user"
+									style={{ marginTop: "0.3em" }}
+								></i>
+							}
+							// menuVariant="dark"
+							className="nav-item dropdown"
+						>
+							<NavDropdown.Item style={{ padding: "0" }}>
+								<Link
+									className="dropdown-item"
+									to={`/${auth?.name}`}
+								>
+									<i className="fas fa-user me-2"></i>
+									PROFILE
+								</Link>
+							</NavDropdown.Item>
+							<NavDropdown.Divider />
+							<NavDropdown.Item style={{ padding: "0" }}>
+								<Link
+									className="dropdown-item"
+									to={`/${auth?.name}/courses`}
+								>
+									<i class="fa-solid fa-book me-2"></i>
+									TO MY COURSES
+								</Link>
+							</NavDropdown.Item>
+							<NavDropdown.Divider />
+							<NavDropdown.Item style={{ padding: "0" }}>
+								<span
+									className="ms-3"
+									onClick={() => {
+										if (
+											window.confirm(
+												"Are you sure you want to log out?"
+											)
+										) {
+											logout();
+										}
+									}}
+								>
+									<i className="fas fa-sign-out me-2"></i>
+									LOG OUT
+								</span>
+							</NavDropdown.Item>
+						</NavDropdown>
+					</Nav>
 				);
 			default:
 				return (
@@ -97,7 +188,7 @@ function HomepageLayout({ children }) {
 					// </Navbar.Text>
 				);
 		}
-	}, [auth]);
+	}, [auth, cartItems]);
 
 	useEffect(() => {
 		const handleScroll = () => {
@@ -119,8 +210,19 @@ function HomepageLayout({ children }) {
 
 	return (
 		<div className="homepageLayout">
+			{alert.type != "" && (
+				<Alert
+					variant={alert.type}
+					dismissible
+					transition
+					className="position-fixed bottom-0 end-0"
+					style={{ width: "fit-content", zIndex: 9999 }}
+				>
+					{alert.message}
+				</Alert>
+			)}
 			<header className="container-fluid p-0">
-				<Navbar fixed="top" expand="lg" bg="white" variant="light">
+				<Navbar expand="lg" fixed="top" bg="white" variant="light">
 					<Container className="d-flex justify-content-around align-items-center">
 						<Navbar.Brand
 							className="d-flex align-items-center"
@@ -289,18 +391,18 @@ function HomepageLayout({ children }) {
 								info@example.com
 							</p>
 							<div className="d-flex justify-content-start mt-4">
-								<a className="text-white mr-4" href="#">
+								<Link className="text-white mr-4" to="#">
 									<i className="fab fa-2x fa-twitter"></i>
-								</a>
-								<a className="text-white mr-4" href="#">
+								</Link>
+								<Link className="text-white mr-4" to="#">
 									<i className="fab fa-2x fa-facebook-f"></i>
-								</a>
-								<a className="text-white mr-4" href="#">
+								</Link>
+								<Link className="text-white mr-4" to="#">
 									<i className="fab fa-2x fa-linkedin-in"></i>
-								</a>
-								<a className="text-white" href="#">
+								</Link>
+								<Link className="text-white" to="#">
 									<i className="fab fa-2x fa-instagram"></i>
-								</a>
+								</Link>
 							</div>
 						</Col>
 						<Col md={4} className="mb-5">
@@ -348,7 +450,7 @@ function HomepageLayout({ children }) {
 									<i className="fa fa-angle-right mr-2"></i>Help
 									& Support
 								</Link>
-								<Link to="#" className="text-white-50">
+								<Link to="/contact" className="text-white-50">
 									<i className="fa fa-angle-right mr-2"></i>
 									Contact
 								</Link>
@@ -375,12 +477,12 @@ function HomepageLayout({ children }) {
 						<Col md={6} className="text-center text-md-right">
 							<p className="m-0">
 								Designed by{" "}
-								<a
+								<Link
 									className="text-white"
-									href="https://htmlcodex.com"
+									to="https://htmlcodex.com"
 								>
 									HTML Codex
-								</a>
+								</Link>
 							</p>
 						</Col>
 					</Row>

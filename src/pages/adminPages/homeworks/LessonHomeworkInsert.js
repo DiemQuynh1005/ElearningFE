@@ -1,38 +1,14 @@
 import React, { useContext, useState } from "react";
 import { Button, Form, Row, Col } from "react-bootstrap";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { DataContext } from "../../../contexts/DataContext";
-
-const schema = yup.object().shape({
-	duration: yup
-		.number()
-		.typeError("Duration must be a number!")
-		.min(5, "Duration cannot be less than 5!")
-		.max(60, "Duration must be less than 60!")
-		.integer(),
-	questions: yup.array().of(
-		yup.object().shape({
-			question: yup
-				.string()
-				.required("Question cannot be blank!")
-				.min(5, "Question text must be greater than 5 characters!"),
-			options: yup.array().of(
-				yup.object().shape({
-					optionText: yup.string().required("Answer cannot be blank!"),
-				})
-			),
-		})
-	),
-});
 
 function LessonHomeworkInsert(props) {
 	const navigate = useNavigate();
 	const { alert, showAlert } = useContext(DataContext);
 	const { id } = useParams();
+	const [duration, setDuration] = useState(5);
 	const [questions, setQuestions] = useState([
 		{
 			question: "",
@@ -42,15 +18,7 @@ function LessonHomeworkInsert(props) {
 			],
 		},
 	]);
-
-	const {
-		register,
-		handleSubmit,
-		formState: { errors },
-	} = useForm({
-		resolver: yupResolver(schema),
-		mode: "onChange",
-	});
+	const [errors, setErrors] = useState({});
 
 	const handleQuestionChange = (questionIndex, event) => {
 		setQuestions((prevQuestions) =>
@@ -122,7 +90,6 @@ function LessonHomeworkInsert(props) {
 				],
 			},
 		]);
-		// setValue("questions.question", "");
 	};
 
 	const removeOption = (questionIndex, optionIndex) => {
@@ -150,41 +117,78 @@ function LessonHomeworkInsert(props) {
 		}
 	};
 
-	async function onSubmit(data) {
-		console.log("DATA:", data.duration);
-		console.log("DATA Qs:", questions);
-		console.log("Lesson_id: ", id);
+	const validateForm = () => {
+		let isValid = true;
+		const newErrors = {};
 
-		const sendData = {
-			duration: data.duration,
-			status: true,
-			lesson_id: id,
-			questions: questions.map((question) => ({
-				type: "OPTION",
-				question: question.question,
-				options: question.options.map((option) => ({
-					optionText: option.optionText,
-					result: option.isCorrect,
-				})),
-			})),
-		};
-
-		try {
-			const response = await axios.post(
-				"http://localhost:8080/api/homeworks/create",
-				sendData
-			);
-			if (response.status === 201) {
-				showAlert("success", "CREATE HOMEWORK SUCCESSFULLY!");
-				navigate(-1);
-			}
-		} catch (error) {
-			console.error("Error:", error);
+		if (!duration) {
+			newErrors.duration = "Duration is required";
+			isValid = false;
+		} else if (isNaN(duration) || duration < 5 || duration > 60) {
+			newErrors.duration = "Duration must be a number between 5 and 60";
+			isValid = false;
 		}
-	}
+
+		questions.forEach((question, questionIndex) => {
+			if (!question.question) {
+				newErrors[`questions[${questionIndex}].question`] = "Question is required";
+				isValid = false;
+			} else if (question.question.length < 5) {
+				newErrors[`questions[${questionIndex}].question`] =
+					"Question must be at least 5 characters";
+				isValid = false;
+			}
+
+			question.options.forEach((option, optionIndex) => {
+				if (!option.optionText) {
+					newErrors[
+						`questions[${questionIndex}].options[${optionIndex}].optionText`
+					] = "Option text is required";
+					isValid = false;
+				}
+			});
+		});
+
+		setErrors(newErrors);
+		return isValid;
+	};
+
+	const onSubmit = async (event) => {
+		event.preventDefault();
+		const isValid = validateForm();
+
+		if (isValid) {
+			const sendData = {
+				duration: parseInt(duration, 10), // Parse duration to integer
+				status: true,
+				lesson_id: id,
+				questions: questions.map((question) => ({
+					type: "OPTION",
+					question: question.question,
+					options: question.options.map((option) => ({
+						optionText: option.optionText,
+						result: option.isCorrect,
+					})),
+				})),
+			};
+
+			try {
+				const response = await axios.post(
+					"http://localhost:8080/api/homeworks/create",
+					sendData
+				);
+				if (response.status === 201) {
+					showAlert("success", "CREATE HOMEWORK SUCCESSFULLY!");
+					navigate(-1);
+				}
+			} catch (error) {
+				console.error("Error:", error);
+			}
+		}
+	};
 
 	return (
-		<Form onSubmit={handleSubmit(onSubmit)}>
+		<Form onSubmit={onSubmit}>
 			<div className="mb-3 mt-3">
 				<label htmlFor="duration" className="form-label">
 					Duration:<span className="text-danger">*</span>
@@ -194,12 +198,14 @@ function LessonHomeworkInsert(props) {
 					className="form-control"
 					id="duration"
 					placeholder="Enter Duration"
-					{...register("duration")}
+					value={duration}
+					onChange={(e) => setDuration(e.target.value)}
 				/>
-				<span className="text-danger">{errors.duration?.message}</span>
+				<span className="text-danger">{errors.duration}</span>
 			</div>
+
 			{questions.map((question, questionIndex) => (
-				<div key={questionIndex}>
+				<div key={questionIndex} className="border p-3 my-3">
 					<Form.Group className="mb-3">
 						<Row>
 							<Col xs={11}>
@@ -208,9 +214,6 @@ function LessonHomeworkInsert(props) {
 									type="text"
 									placeholder="Enter question"
 									value={question.question}
-									{...register(
-										`questions.${questionIndex}.question`
-									)}
 									onChange={(event) =>
 										handleQuestionChange(
 											questionIndex,
@@ -220,8 +223,9 @@ function LessonHomeworkInsert(props) {
 								/>
 								<span className="text-danger">
 									{
-										errors?.questions?.[questionIndex]
-											?.question?.message
+										errors[
+											`questions[${questionIndex}].question`
+										]
 									}
 								</span>
 							</Col>
@@ -244,9 +248,6 @@ function LessonHomeworkInsert(props) {
 									type="text"
 									placeholder="Enter option"
 									value={option.optionText}
-									{...register(
-										`questions.${questionIndex}.options.${optionIndex}.optionText`
-									)}
 									onChange={(event) =>
 										handleOptionChange(
 											questionIndex,
@@ -257,9 +258,9 @@ function LessonHomeworkInsert(props) {
 								/>
 								<span className="text-danger">
 									{
-										errors?.questions?.[questionIndex]
-											?.options[optionIndex]?.optionText
-											?.message
+										errors[
+											`questions[${questionIndex}].options[${optionIndex}].optionText`
+										]
 									}
 								</span>
 							</Col>
@@ -268,7 +269,7 @@ function LessonHomeworkInsert(props) {
 									<Col xs={6}>
 										<Form.Check
 											type="switch"
-											id={`custom-radio-${questionIndex}-${optionIndex}`}
+											id={`custom-radio-<span class="math-inline">\{questionIndex\}\-</span>{optionIndex}`}
 											name={`radio-${questionIndex}`}
 											label=""
 											checked={option.isCorrect}

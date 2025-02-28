@@ -1,15 +1,14 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { DataContext } from "../../../contexts/DataContext";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-// import { CKEditor } from "@ckeditor/ckeditor5-react";
-// import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import * as yup from "yup";
 import { Alert, Form, Spinner } from "react-bootstrap";
 import axios from "axios";
+import { ColorRing } from "react-loader-spinner";
 
 const schema = yup
 	.object()
@@ -31,43 +30,55 @@ const schema = yup
 			.min(60, "Greater than 60 minutes")
 			// .max(360, "Less than 360 minutes")
 			.required(),
-		// description: yup.string().nullable(),
 		status: yup.boolean().required(),
-		thumbnail: yup
-			.mixed()
-			.test("thumbnail", "You need to provide a file", (value) => {
-				if (value.length > 0) {
-					return true;
-				}
-				return false;
-			})
-			.test("fileType", "Unsupported File Format", (value) => {
-				const file = value[0];
-				return file?.type.startsWith("image/"); // Check if it's an image
-			}),
+		thumbnail: yup.mixed(),
 	})
 	.required();
 
-function CourseInsert(props) {
+function CourseEdit(props) {
 	const navigate = useNavigate();
 	const { alert, showAlert, auth } = useContext(DataContext);
+	const { id } = useParams();
+	const [course, setCourse] = useState(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [submissionStep, setSubmissionStep] = useState("");
+	const [descriptionValue, setDescriptionValue] = useState("");
+	const [thumbnailPreview, setThumbnailPreview] = useState(null); // For previewing new thumbnail
+
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
 		setValue,
+		reset, // Add reset function
 	} = useForm({
 		resolver: yupResolver(schema),
 		mode: "onChange",
 	});
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [submissionStep, setSubmissionStep] = useState("");
-	const [thumbnailPreview, setThumbnailPreview] = useState(null);
-	const [descriptionValue, setDescriptionValue] = useState("");
+
+	const fetchCourseData = async () => {
+		try {
+			await axios.get(`http://localhost:8080/api/courses/detail/${id}`).then((res) => {
+				if (res.status === 200) {
+					setCourse(res.data);
+					setDescriptionValue(res.data.description);
+					setValue("status", res.data.status);
+					setThumbnailPreview(
+						`http://localhost:8080/uploads/courses/${res.data.thumbnail}`
+					);
+					reset(res.data); // Use reset to populate all fields at once
+				}
+			});
+		} catch (error) {
+			console.error("Error fetching course data:", error);
+			showAlert("danger", "Failed to load course data.");
+			navigate(-1);
+		}
+	};
 
 	async function onSubmit(data) {
 		setIsSubmitting(true);
-		setSubmissionStep("reviewing");
+		setSubmissionStep("Reviewing");
 		const formData = new FormData();
 		formData.append("account_id", auth.id);
 		formData.append("name", data.name);
@@ -75,22 +86,21 @@ function CourseInsert(props) {
 		formData.append("duration", data.duration);
 		formData.append("description", descriptionValue);
 		formData.append("status", data.status);
-		formData.append("thumbnail", data.thumbnail[0]);
-		setSubmissionStep("creating");
+		if (Object.prototype.toString.call(data.thumbnail) !== "[object String]") {
+			formData.append("thumbnail", data.thumbnail[0]);
+		}
+		setSubmissionStep("Updating...");
 		await axios
-			.post("http://localhost:8080/api/courses/create", formData)
+			.put(`http://localhost:8080/api/courses/edit/${id}`, formData)
 			.then((res) => {
-				if (res.status == 201) {
-					showAlert("success", "CREATE COURSE SUCCESSFULLY!");
+				if (res.status == 200) {
+					showAlert("success", "UPDATE COURSE SUCCESSFULLY!");
 					navigate(-1);
 				}
 			})
 			.catch((error) => {
-				if (error.response.status === 422) {
-					showAlert("warning", "You need to provide a file!");
-				}
-				if (error.response.status === 400) {
-					showAlert("warning", "Description is required!");
+				if (error.response.status === 404) {
+					showAlert("warning", "Course not found!");
 				} else {
 					console.log("Something went wrong", error);
 					showAlert(
@@ -110,6 +120,10 @@ function CourseInsert(props) {
 		setThumbnailPreview(file ? URL.createObjectURL(file) : null);
 	};
 
+	useEffect(() => {
+		fetchCourseData();
+	}, [id]);
+
 	return (
 		<div className="container mt-3" data-aos="fade">
 			{alert.type !== "" && (
@@ -117,7 +131,20 @@ function CourseInsert(props) {
 					{alert.message}
 				</Alert>
 			)}
-			<h2>Course Insert Form</h2>
+			<h2>Course Edit Form</h2>
+			{/* LOADER SPINNER */}
+			{course == null && (
+				<ColorRing
+					visible={true}
+					height="80"
+					width="80"
+					ariaLabel="blocks-loading"
+					wrapperStyle={{ display: "block", margin: "auto" }}
+					wrapperClass="blocks-wrapper"
+					colors={["#F5F5F5", "#313236", "#7CD6EA", "#172765", "#F5F5F5"]}
+				/>
+			)}
+			{/* END LOADER SPINNER */}
 			<form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
 				<div className="row mb-3 mt-3">
 					<div className="col-4">
@@ -219,7 +246,7 @@ function CourseInsert(props) {
 					</label>
 					<ReactQuill
 						theme="snow"
-						// value={descriptionValue}
+						value={descriptionValue}
 						onChange={setDescriptionValue}
 					/>
 					{/* <span className="text-danger">{errors.description?.message}</span> */}
@@ -238,14 +265,15 @@ function CourseInsert(props) {
 							/>
 							{submissionStep === "reviewing"
 								? "Reviewing..."
-								: "Creating..."}
+								: "Updating..."}
 						</>
 					) : (
-						"Create Course"
+						"Update Course"
 					)}
 				</button>
 			</form>
 		</div>
 	);
 }
-export default CourseInsert;
+
+export default CourseEdit;

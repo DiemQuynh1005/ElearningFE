@@ -24,7 +24,7 @@ function CourseList(props) {
 	useEffect(() => {
 		fetchData();
 		AOS.init();
-	}, [data]);
+	}, []);
 
 	//PAGINATE
 	const [currentItems, setCurrentItems] = useState([]);
@@ -71,7 +71,7 @@ function CourseList(props) {
 			<table className="table table-striped table-dark" data-aos="fade">
 				<thead>
 					<tr>
-						<th>ID</th>
+						<th>#</th>
 						<th>Name</th>
 						<th>Thumbnail</th>
 						<th>Duration (Minutes)</th>
@@ -88,7 +88,7 @@ function CourseList(props) {
 							.map((item, index) => {
 								return (
 									<tr key={index}>
-										<td>{item.id}</td>
+										<td>{index + 1}</td>
 										<td>{item.name}</td>
 										<td>
 											<img
@@ -97,8 +97,8 @@ function CourseList(props) {
 												alt="img"
 												className="img-thumbnail"
 												style={{
-													width: "200px",
-													height: "100px",
+													width: "7em",
+													height: "10em",
 												}}
 											/>
 										</td>
@@ -116,8 +116,12 @@ function CourseList(props) {
 											</span>
 										</td>
 										<td>
-											<Link className="btn btn-success me-2">
-												<b>Edit</b>
+											<Link
+												className="btn btn-success me-2"
+												to={`./edit/${item.id}`}
+												title="Edit"
+											>
+												<i className="fa-solid fa-pen-to-square"></i>
 											</Link>
 
 											<Link

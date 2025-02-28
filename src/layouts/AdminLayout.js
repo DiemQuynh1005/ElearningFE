@@ -131,7 +131,7 @@ function AdminLayout({ children }) {
 										<li className="submenu-item">
 											<Link
 												className="submenu-link"
-												to={"/admin/lesson"}
+												to={"/admin/blog"}
 											>
 												<i className="fa-solid fa-newspaper me-2"></i>
 												Blogs
@@ -176,71 +176,6 @@ function AdminLayout({ children }) {
 									</Accordion.Body>
 								</Accordion.Item>
 							</Accordion>
-							{/* </li> */}
-
-							<li className="sidebar-title">Pages</li>
-							<li className="sidebar-item  has-sub">
-								<a href="#" className="sidebar-link">
-									<i className="bi bi-person-circle"></i>
-									<span>Account</span>
-								</a>
-
-								<ul className="submenu ">
-									<li className="submenu-item  ">
-										<a
-											href="account-profile.html"
-											className="submenu-link"
-										>
-											Profile
-										</a>
-									</li>
-
-									<li className="submenu-item  ">
-										<a
-											href="account-security.html"
-											className="submenu-link"
-										>
-											Security
-										</a>
-									</li>
-								</ul>
-							</li>
-
-							<li className="sidebar-item  has-sub">
-								<a href="#" className="sidebar-link">
-									<i className="bi bi-person-badge-fill"></i>
-									<span>Authentication</span>
-								</a>
-
-								<ul className="submenu ">
-									<li className="submenu-item  ">
-										<a
-											href="auth-login.html"
-											className="submenu-link"
-										>
-											Login
-										</a>
-									</li>
-
-									<li className="submenu-item  ">
-										<a
-											href="auth-register.html"
-											className="submenu-link"
-										>
-											Register
-										</a>
-									</li>
-
-									<li className="submenu-item  ">
-										<a
-											href="auth-forgot-password.html"
-											className="submenu-link"
-										>
-											Forgot Password
-										</a>
-									</li>
-								</ul>
-							</li>
 						</ul>
 					</div>
 				</div>
